@@ -27,8 +27,8 @@ class Particle():
         Update a particle's location and handle wall collisions.
 
         time_step: float, the size of the time_step
-        xlim: the x boundary
-        ylim: the y boundary
+        xlim: int, the x boundary of the environment
+        ylim: int, the y boundary of the environment
         """
         # calculate where we'll be next time step
         self.x = self.x + self.x_vel * time_step

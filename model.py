@@ -117,7 +117,9 @@ class Model():
                             q.y_vel = p_yvel
                             p.last = q
                             q.last = p
-                    handled.add(q)
+                            # again, I think this logic is funky but this way 
+                            # works most consistently
+                            handled.add(q)
 
 # set up the environment for the particles
 fig, axes = plt.subplots()    
