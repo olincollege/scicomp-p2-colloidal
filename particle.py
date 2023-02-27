@@ -8,7 +8,8 @@ class Particle():
         self.radius = r
         self.x_vel = x_vel
         self.y_vel = y_vel
-        self.circle = plt.Circle((self.x, self.y), self.radius)
+        self.circle = plt.Circle((self.x, self.y), self.radius, color='#7CECB4')
+        self.last  = None
 
     def update(self, time_step, xlim, ylim) -> None:
         # calculate where we'll be next time step
@@ -16,8 +17,9 @@ class Particle():
         self.y = self.y + self.y_vel * time_step
 
         # check if we're colliding with the walls
-        if (self.x + self.radius >= xlim) | (self.x + self.radius <= -xlim):
+        if (self.x + self.radius >= xlim) | (self.x - self.radius <= -xlim):
             self.x_vel = -1 * self.x_vel
-        if (self.y + self.radius >= ylim) | (self.y + self.radius <= -ylim):
+            self.last = None
+        if (self.y + self.radius >= ylim) | (self.y - self.radius <= -ylim):
             self.y_vel = -1 * self.y_vel
-
+            self.last = None
