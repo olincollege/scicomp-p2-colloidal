@@ -20,7 +20,8 @@ class Particle():
         # this store the object that will be drawn on the plot
         self.circle = plt.Circle((self.x, self.y), self.radius, color='#7CECB4')
         # this stores the last thing the particle collided with
-        self.last  = None
+        self.last  = set()
+        self.this = set()
 
     def update(self, time_step: float, xlim: int, ylim: int) -> None:
         """
@@ -30,15 +31,18 @@ class Particle():
         xlim: int, the x boundary of the environment
         ylim: int, the y boundary of the environment
         """
-        # calculate where we'll be next time step
+        # calculate where the particle will be next 
         self.x = self.x + self.x_vel * time_step
         self.y = self.y + self.y_vel * time_step
+
+        # update where to draw the circle
+        self.circle.center = self.x, self.y
 
         # check if we're colliding with the walls
         # might need to move this to the collision handling function
         if (self.x + self.radius >= xlim) | (self.x - self.radius <= -xlim):
             self.x_vel = -1 * self.x_vel
-            self.last = None
+            self.this.clear()
         if (self.y + self.radius >= ylim) | (self.y - self.radius <= -ylim):
             self.y_vel = -1 * self.y_vel
-            self.last = None
+            self.this.clear()

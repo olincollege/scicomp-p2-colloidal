@@ -2,6 +2,7 @@ from particle import Particle
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as ani
+import itertools as it
 
 #avg displacement between x and y on log-log scale
 
@@ -18,6 +19,7 @@ class Model():
         self.t = t
         self.size = size
         self.particles = [self.create_particle() for i in range(num_particles)]
+        self.particle_combos = list(it.combinations(self.particles, 2))
     
     def create_particle(self) -> Particle:
         """
@@ -27,16 +29,17 @@ class Model():
         returns: Particle object
         """
         # set up instance of random number generator
-        rng = np.random.default_rng()
-        # randomly generate radii between 1.0 and 3.0 (units need not apply)
-        r = rng.uniform(low=0.5, high=3.0)
-        # randomly generate a starting location between -size and +size in both
-        # x and y directions
-        x = rng.uniform(low=-self.size, high=self.size)
-        y = rng.uniform(low=-self.size, high=self.size)
-        # draw a random x and y velocity from a Gaussian distribution
-        x_vel = rng.standard_normal(1) * 10
-        y_vel = rng.standard_normal(1)* 10
+        rand_num_gen = np.random.default_rng()
+        
+        # randomly generate starting params for particle
+        r = rand_num_gen.uniform(low=1.0, high=4.0)
+        x = rand_num_gen.uniform(low=-self.size + r, high=self.size - r)
+        y = rand_num_gen.uniform(low=-self.size + r, high=self.size - r)
+
+        # draw velocity from a Gaussian distribution
+        x_vel = rand_num_gen.standard_normal(1) * 10
+        y_vel = rand_num_gen.standard_normal(1)* 10
+
         return Particle(x, y, r, x_vel, y_vel)
     
     def animate(self, i: int) -> list:
@@ -51,15 +54,11 @@ class Model():
         """
         # this is really fucky but basically to animate we have to update the 
         # circle object for each particle
-        circles = []
         for p in self.particles:
-            # calculate where the particle will be next step
             p.update(self.t, self.size, self.size)
-            # update where to draw the circle
-            p.circle.center = p.x, p.y
-            circles.append(p.circle)
-        # handle collisions that will occur
         self.particle_collision_handling()
+        circles = [p.circle for p in self.particles]
+
         # we have to pass back an array of all the circle objects we want to draw
         return circles
     
@@ -77,56 +76,49 @@ class Model():
         """
         Handle collisions between particles.
 
-        The function simply iterates through the list of particles and checks if 
-        they are colliding. This means that particles at the beginning of the
-        particle list will always be handled before particles at the end of the
-        list. Therefore, the resolution of triple collisions is sequential 
-        (meaning it is handled as multiple instances of collisions between three 
-        particles, not one three-way collision) but the collisions are not 
-        resolved in a random order.
+        Due to the storage of the particles in a list, collisions are always
+        handled in sequential order (the order of the particles in the list)
+        rather than random order.
 
-        This function relies on a teleporation mechanism to prevent particles 
-        getting stuck in each other and model more accurately. If two particles
-        most recently collided with each other, they will be able to move through
-        each other instead of getting stuck in a loop of switching velocities.
+        This function uses teleporation to prevent particles getting stuck in each 
+        other. If two particles last collided with each other, they will be able 
+        to move through each other, preventing them getting stuck in a collision loop.
+        Ultimately this results in a more accurate model. 
         """
-        # track which particles we've already handled
-        # this is because handling a collision between a and b is the same as
-        # handling a collision between b and a so to save computational power
-        # we don't want to recompute ones we've already dealt with
-        handled = set()
-        for p in self.particles:
-            # I think something about this logic is a little funky but it works
-            # better this way than if I do this check on q instead.
-            if p not in handled:
-                for q in self.particles:
-                    # make sure we're not comparing a particle to itself
-                    if (p != q):
-                        # calculate the distance between the particle centers
-                        dist = np.sqrt((p.x - q.x) ** 2 + (p.y - q.y) ** 2)
-                        # check they're not touching, check that they didn't
-                        # collide with each other most recently
-                        if (dist <= p.radius + q.radius) & (p.last != q):
-                            p_xvel = p.x_vel
-                            p_yvel = p.y_vel
-                            
-                            p.x_vel = q.x_vel
-                            p.y_vel = q.y_vel
+        seen = set()
+        for p1, p2 in self.particle_combos:
 
-                            q.x_vel = p_xvel
-                            q.y_vel = p_yvel
-                            p.last = q
-                            q.last = p
-                            # again, I think this logic is funky but this way 
-                            # works most consistently
-                            handled.add(q)
+            if p1 not in seen:
+                p1.last = p1.this
+                p1.this = set()
+            if p2 not in seen:
+                p2.last = p2.this
+                p2.this = set()
+
+            dist = np.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2)
+            if (dist <= p1.radius + p2.radius) & (p2 not in p1.last):
+                print("here")
+                placeholder_x = p1.x_vel
+                placeholder_y = p1.y_vel
+                
+                p1.x_vel = p2.x_vel
+                p1.y_vel = p2.y_vel
+
+                p2.x_vel = placeholder_x
+                p2.y_vel = placeholder_y
+
+                p1.this.add(p2)
+                p2.this.add(p1)
+            seen.add(p1)
+            seen.add(p2)
+    
 
 # set up the environment for the particles
 fig, axes = plt.subplots()    
-model = Model(.01, 25, 50)
+model = Model(.01, 10, 5)
 
 # set up the animation
-anim = ani.FuncAnimation(fig, model.animate, frames = 1000, interval=30)
+anim = ani.FuncAnimation(fig, model.animate, interval=20, blit=True)
 
 axes.set_aspect(1) 
 # draw the particles on the axes
