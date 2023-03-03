@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 from matplotlib import animation as ani
 
 class Particle():
-    def __init__(self, x: float, y: float, r: float, x_vel: float, y_vel: float) -> None:
+    def __init__(self, x: float, y: float, r: float, x_vel: float, y_vel: float, m: int=1) -> None:
         """
         Initiate an instance of class Particle.
 
@@ -13,12 +13,14 @@ class Particle():
         y_vel: float, the y velocity of the particle
         """
         self.x = x
+        self.starting_x = self.x
         self.y = y
-        self.radius = r
+        self.r = r
         self.x_vel = x_vel
         self.y_vel = y_vel
+        self.m = m
         # this store the object that will be drawn on the plot
-        self.circle = plt.Circle((self.x, self.y), self.radius, color='#7CECB4')
+        self.circle = plt.Circle((self.x, self.y), self.r, color='#7CECB4')
         # this stores the last thing the particle collided with
         self.last  = set()
         self.this = set()
@@ -40,9 +42,9 @@ class Particle():
 
         # check if we're colliding with the walls
         # might need to move this to the collision handling function
-        if (self.x + self.radius >= xlim) | (self.x - self.radius <= -xlim):
+        if (self.x + self.r >= xlim) | (self.x - self.r <= -xlim):
             self.x_vel = -1 * self.x_vel
             self.this.clear()
-        if (self.y + self.radius >= ylim) | (self.y - self.radius <= -ylim):
+        if (self.y + self.r >= ylim) | (self.y - self.r <= -ylim):
             self.y_vel = -1 * self.y_vel
             self.this.clear()
