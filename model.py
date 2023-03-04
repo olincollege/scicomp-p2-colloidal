@@ -4,26 +4,28 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as ani
 import itertools as it
 
-#avg displacement between x and y on log-log scale
-
 class Model():
     def __init__(self, t: float, size: int, num_particles: int, intervals: int=10) -> None:
         """
-        Initiate instancec of class Particle
+        Initiate instance of class Particle
 
         t: float, the size of the timestep
         size: int, the size of bounding box to make. The box will be a square
             ranging from -size to +size in both the x and y directions
         num_particles: int, the number of particles to create in the simulation
+        intervals: int, the base size of interval to benchmark at. Defaults to 10, so
+            it will sample displacement every 10^n timesteps. An interval of 2 would 
+            sample every 2^n timesteps
         """
         self.t = t
         self.size = size
         self.particles = [self.create_particle() for _ in range(num_particles)]
         self.particle_combos = list(it.combinations(self.particles, 2))
         self.bench_num = 1
-        self.x_displacement_timings = []
-        self.x_displacement = []
+        self.x_displacement_timings = [0]
+        self.x_displacement = [1]
         self.benchmark_intervals = intervals
+        self.counter = 0
     
     def create_particle(self, vel_scale=100) -> Particle:
         """
@@ -57,15 +59,17 @@ class Model():
 
         returns: array of plt.Circle objects
         """
+        # track average displacement at exponentially increasing intervals
         if i == self.bench_num * self.benchmark_intervals:
             avg_x_disp = sum([(p.x - p.starting_x) ** 2 for p in self.particles]) / len(self.particles)
             self.x_displacement.append(avg_x_disp)
             self.bench_num *= self.benchmark_intervals
             self.x_displacement_timings.append(self.bench_num)
+        # update all particles
         for p in self.particles:
             p.update(self.t, self.size, self.size)
         self.particle_collision_handling()
-        
+        self.counter += 1
         # we have to pass back an array of all the circle objects we want to draw 
         circles = [p.circle for p in self.particles]
         return circles
@@ -119,32 +123,22 @@ class Model():
                 p1.this.add(p2)
                 p2.this.add(p1)
             seen.add(p1)
-            seen.add(p2)
+            seen.add(p2) 
     
-    def display_benchmarking(self):
+    def run_loop(self):
         """
-        Display a graph of the average displacement of particles at
-        exponentially increasing intervals.
+        Run an animation of the model. 
         """
-        plt.loglog(self.x_displacement_timings, self.x_displacement, 'o')
-        plt.axis("equal")
-        plt.title("Average Particle x Displacement Over Time")
-        plt.xlabel("Timestep")
-        plt.ylabel("Average x^2 displacement")
-        plt.show()  
-    
+        # set up the environment for the particles
+        fig, axes = plt.subplots()
 
-# set up the environment for the particles
-fig, axes = plt.subplots()    
-model = Model(.01, 35, 100, intervals=2)
+        # set up the animation
+        anim = ani.FuncAnimation(fig, self.animate, interval=20, blit=True)
 
-# set up the animation
-anim = ani.FuncAnimation(fig, model.animate, interval=20, blit=True)
-
-axes.set_aspect(1) 
-model.draw_particles(axes)
-axes.set_xlim([-model.size, model.size])
-axes.set_ylim([-model.size, model.size])
-plt.title('Particles Go Boing Boing') 
-plt.show()
-model.display_benchmarking()
+        axes.set_aspect(1) 
+        self.draw_particles(axes)
+        # important to set the box to the right size or animation won't display properly
+        axes.set_xlim([-self.size, self.size])
+        axes.set_ylim([-self.size, self.size])
+        plt.title('Particles Go Boing Boing') 
+        plt.show()
