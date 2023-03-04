@@ -11,6 +11,7 @@ class Particle():
         r: float, the radius of the particle
         x_vel: float, the x velocity of the particle
         y_vel: float, the y velocity of the particle
+        m: int, the mass of the particle. Defaults to 1
         """
         self.x = x
         self.starting_x = self.x
@@ -40,8 +41,7 @@ class Particle():
         # update where to draw the circle
         self.circle.center = self.x, self.y
 
-        # check if we're colliding with the walls
-        # might need to move this to the collision handling function
+        # handle wall collisions
         if (self.x + self.r >= xlim) | (self.x - self.r <= -xlim):
             self.x_vel = -1 * self.x_vel
             self.this.clear()
